@@ -1,0 +1,64 @@
+class Product:
+    def __init__(self, id, name, price, stock):
+        self.id = id
+        self.name = name
+        self.price = price
+        self.stock = stock
+
+    def __str__(self):
+        return f"{self.name} - ${self.price} ({self.stock} in stock)"
+
+
+class Inventory:
+    def __init__(self):
+        self.products = {}
+
+    def add_product(self, product):
+        self.products[product.id] = product
+
+    def get_product(self, product_id):
+        return self.products.get(product_id)
+
+    def update_stock(self, product_id, quantity):
+        if product_id in self.products:
+            self.products[product_id].stock -= quantity
+
+
+class ShoppingCart:
+    def __init__(self):
+        self.items = {}
+
+    def add_to_cart(self, product, quantity):
+        if product.stock >= quantity:
+            self.items[product.id] = (product, quantity)
+        else:
+            print(f"Insufficient stock for {product.name}")
+
+    def calculate_total(self):
+        return sum(product.price * qty for product, qty in self.items.values())
+
+
+class Order:
+    def __init__(self, cart, inventory):
+        self.cart = cart
+        self.inventory = inventory
+        self.status = "Pending"
+
+    def place_order(self):
+        for product_id, (product, quantity) in self.cart.items.items():
+            self.inventory.update_stock(product_id, quantity)
+        self.status = "Completed"
+        print(f"Order placed. Total: ${self.cart.calculate_total()}")
+
+
+# Przykład użycia
+inventory = Inventory()
+inventory.add_product(Product(1, "T-shirt", 50.0, 10))
+inventory.add_product(Product(2, "Jeans", 120.0, 5))
+
+cart = ShoppingCart()
+cart.add_to_cart(inventory.get_product(1), 2)
+cart.add_to_cart(inventory.get_product(2), 1)
+
+order = Order(cart, inventory)
+order.place_order()
