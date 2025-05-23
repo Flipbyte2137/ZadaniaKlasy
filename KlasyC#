@@ -15,6 +15,11 @@ class Product
         Price = price;
         Stock = stock;
     }
+
+    public override string ToString()
+    {
+        return $"{Id}. {Name} - ${Price} ({Stock} szt.)";
+    }
 }
 
 class Inventory
@@ -31,10 +36,16 @@ class Inventory
         return Products.ContainsKey(id) ? Products[id] : null;
     }
 
-    public void UpdateStock(int id, int quantity)
+    public void ListProducts()
+    {
+        foreach (var p in Products.Values)
+            Console.WriteLine(p);
+    }
+
+    public void UpdateStock(int id, int qty)
     {
         if (Products.ContainsKey(id))
-            Products[id].Stock -= quantity;
+            Products[id].Stock -= qty;
     }
 }
 
@@ -45,9 +56,37 @@ class ShoppingCart
     public void AddToCart(Product product, int quantity)
     {
         if (product.Stock >= quantity)
-            Items[product.Id] = (product, quantity);
+        {
+            if (Items.ContainsKey(product.Id))
+                Items[product.Id] = (product, Items[product.Id].quantity + quantity);
+            else
+                Items[product.Id] = (product, quantity);
+
+            Console.WriteLine($"Dodano {quantity} x {product.Name} do koszyka.");
+        }
         else
-            Console.WriteLine($"Insufficient stock for {product.Name}");
+        {
+            Console.WriteLine($"Za mało na stanie: {product.Name}");
+        }
+    }
+
+    public void ViewCart()
+    {
+        Console.WriteLine("\nTwój koszyk:");
+        if (Items.Count == 0)
+        {
+            Console.WriteLine("Koszyk jest pusty.");
+        }
+        else
+        {
+            double total = 0;
+            foreach (var item in Items.Values)
+            {
+                Console.WriteLine($"{item.product.Name} - {item.quantity} szt. - ${item.product.Price * item.quantity}");
+                total += item.product.Price * item.quantity;
+            }
+            Console.WriteLine($"Razem: ${total}\n");
+        }
     }
 
     public double CalculateTotal()
@@ -57,30 +96,20 @@ class ShoppingCart
             total += item.product.Price * item.quantity;
         return total;
     }
+
+    public void ClearCart() => Items.Clear();
 }
 
 class Order
 {
-    private ShoppingCart cart;
-    private Inventory inventory;
-    public string Status { get; private set; }
-
-    public Order(ShoppingCart cart, Inventory inventory)
-    {
-        this.cart = cart;
-        this.inventory = inventory;
-        Status = "Pending";
-    }
-
-    public void PlaceOrder()
+    public static void PlaceOrder(ShoppingCart cart, Inventory inventory)
     {
         foreach (var item in cart.Items)
         {
             inventory.UpdateStock(item.Key, item.Value.quantity);
         }
-
-        Status = "Completed";
-        Console.WriteLine($"Order placed. Total: ${cart.CalculateTotal()}");
+        Console.WriteLine($"Zamówienie złożone! Kwota do zapłaty: ${cart.CalculateTotal()}\n");
+        cart.ClearCart();
     }
 }
 
@@ -88,15 +117,68 @@ class Program
 {
     static void Main()
     {
-        Inventory inventory = new Inventory();
-        inventory.AddProduct(new Product(1, "T-shirt", 50.0, 10));
-        inventory.AddProduct(new Product(2, "Jeans", 120.0, 5));
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        Console.InputEncoding = System.Text.Encoding.UTF8;
 
-        ShoppingCart cart = new ShoppingCart();
-        cart.AddToCart(inventory.GetProduct(1), 2);
-        cart.AddToCart(inventory.GetProduct(2), 1);
+        Inventory inventory = new();
+        inventory.AddProduct(new Product(1, "Koszulka", 50.0, 10));
+        inventory.AddProduct(new Product(2, "Jeansy", 120.0, 5));
+        inventory.AddProduct(new Product(3, "Bluza", 90.0, 7));
 
-        Order order = new Order(cart, inventory);
-        order.PlaceOrder();
+        ShoppingCart cart = new();
+
+        while (true)
+        {
+            Console.WriteLine(@"
+1. Pokaż produkty
+2. Dodaj produkt do koszyka
+3. Pokaż koszyk
+4. Złóż zamówienie
+5. Wyjdź
+");
+            Console.Write("Wybierz opcję: ");
+            string input = Console.ReadLine();
+
+            if (input == "1")
+            {
+                inventory.ListProducts();
+            }
+            else if (input == "2")
+            {
+                try
+                {
+                    Console.Write("Podaj ID produktu: ");
+                    int id = int.Parse(Console.ReadLine());
+                    Console.Write("Ilość: ");
+                    int qty = int.Parse(Console.ReadLine());
+                    Product product = inventory.GetProduct(id);
+                    if (product != null)
+                        cart.AddToCart(product, qty);
+                    else
+                        Console.WriteLine("Nie ma takiego produktu.");
+                }
+                catch
+                {
+                    Console.WriteLine("Błąd danych.");
+                }
+            }
+            else if (input == "3")
+            {
+                cart.ViewCart();
+            }
+            else if (input == "4")
+            {
+                Order.PlaceOrder(cart, inventory);
+            }
+            else if (input == "5")
+            {
+                Console.WriteLine("Do zobaczenia!");
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Nieprawidłowy wybór.");
+            }
+        }
     }
 }
