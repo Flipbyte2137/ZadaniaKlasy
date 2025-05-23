@@ -6,7 +6,7 @@ class Product:
         self.stock = stock
 
     def __str__(self):
-        return f"{self.name} - ${self.price} ({self.stock} in stock)"
+        return f"{self.id}. {self.name} - ${self.price} ({self.stock} szt.)"
 
 
 class Inventory:
@@ -19,6 +19,10 @@ class Inventory:
     def get_product(self, product_id):
         return self.products.get(product_id)
 
+    def list_products(self):
+        for product in self.products.values():
+            print(product)
+
     def update_stock(self, product_id, quantity):
         if product_id in self.products:
             self.products[product_id].stock -= quantity
@@ -30,33 +34,78 @@ class ShoppingCart:
 
     def add_to_cart(self, product, quantity):
         if product.stock >= quantity:
-            self.items[product.id] = (product, quantity)
+            if product.id in self.items:
+                self.items[product.id][1] += quantity
+            else:
+                self.items[product.id] = [product, quantity]
+            print(f"Dodano {quantity} x {product.name} do koszyka.")
         else:
-            print(f"Insufficient stock for {product.name}")
+            print(f"Za mało na stanie: {product.name}")
+
+    def view_cart(self):
+        print("\nTwój koszyk:")
+        if not self.items:
+            print("Koszyk jest pusty.")
+        else:
+            for product, qty in self.items.values():
+                print(f"{product.name} - {qty} szt. - ${product.price * qty:.2f}")
+            print(f"Razem: ${self.calculate_total():.2f}\n")
 
     def calculate_total(self):
-        return sum(product.price * qty for product, qty in self.items.values())
+        return sum(p.price * q for p, q in self.items.values())
 
 
 class Order:
     def __init__(self, cart, inventory):
         self.cart = cart
         self.inventory = inventory
-        self.status = "Pending"
 
     def place_order(self):
-        for product_id, (product, quantity) in self.cart.items.items():
-            self.inventory.update_stock(product_id, quantity)
-        self.status = "Completed"
-        print(f"Order placed. Total: ${self.cart.calculate_total()}")
+        for product_id, (product, qty) in self.cart.items.items():
+            self.inventory.update_stock(product_id, qty)
+        print(f"Zamówienie złożone! Kwota do zapłaty: ${self.cart.calculate_total():.2f}\n")
+        self.cart.items.clear()
 
 inventory = Inventory()
-inventory.add_product(Product(1, "T-shirt", 50.0, 10))
-inventory.add_product(Product(2, "Jeans", 120.0, 5))
+inventory.add_product(Product(1, "Koszulka", 50.0, 10))
+inventory.add_product(Product(2, "Jeansy", 120.0, 5))
+inventory.add_product(Product(3, "Bluza", 90.0, 7))
 
 cart = ShoppingCart()
-cart.add_to_cart(inventory.get_product(1), 2)
-cart.add_to_cart(inventory.get_product(2), 1)
 
-order = Order(cart, inventory)
-order.place_order()
+def menu():
+    while True:
+        print("""
+1. Pokaż produkty
+2. Dodaj produkt do koszyka
+3. Pokaż koszyk
+4. Złóż zamówienie
+5. Wyjdź
+""")
+        choice = input("Wybierz opcję: ")
+
+        if choice == "1":
+            inventory.list_products()
+        elif choice == "2":
+            try:
+                product_id = int(input("Podaj ID produktu: "))
+                quantity = int(input("Podaj ilość: "))
+                product = inventory.get_product(product_id)
+                if product:
+                    cart.add_to_cart(product, quantity)
+                else:
+                    print("Nie ma takiego produktu.")
+            except ValueError:
+                print("Nieprawidłowe dane.")
+        elif choice == "3":
+            cart.view_cart()
+        elif choice == "4":
+            order = Order(cart, inventory)
+            order.place_order()
+        elif choice == "5":
+            print("Do zobaczenia!")
+            break
+        else:
+            print("Nieprawidłowy wybór.")
+
+menu()
