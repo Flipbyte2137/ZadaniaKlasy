@@ -1,0 +1,102 @@
+using System;
+using System.Collections.Generic;
+
+class Product
+{
+    public int Id;
+    public string Name;
+    public double Price;
+    public int Stock;
+
+    public Product(int id, string name, double price, int stock)
+    {
+        Id = id;
+        Name = name;
+        Price = price;
+        Stock = stock;
+    }
+}
+
+class Inventory
+{
+    public Dictionary<int, Product> Products = new();
+
+    public void AddProduct(Product product)
+    {
+        Products[product.Id] = product;
+    }
+
+    public Product GetProduct(int id)
+    {
+        return Products.ContainsKey(id) ? Products[id] : null;
+    }
+
+    public void UpdateStock(int id, int quantity)
+    {
+        if (Products.ContainsKey(id))
+            Products[id].Stock -= quantity;
+    }
+}
+
+class ShoppingCart
+{
+    public Dictionary<int, (Product product, int quantity)> Items = new();
+
+    public void AddToCart(Product product, int quantity)
+    {
+        if (product.Stock >= quantity)
+            Items[product.Id] = (product, quantity);
+        else
+            Console.WriteLine($"Insufficient stock for {product.Name}");
+    }
+
+    public double CalculateTotal()
+    {
+        double total = 0;
+        foreach (var item in Items.Values)
+            total += item.product.Price * item.quantity;
+        return total;
+    }
+}
+
+class Order
+{
+    private ShoppingCart cart;
+    private Inventory inventory;
+    public string Status { get; private set; }
+
+    public Order(ShoppingCart cart, Inventory inventory)
+    {
+        this.cart = cart;
+        this.inventory = inventory;
+        Status = "Pending";
+    }
+
+    public void PlaceOrder()
+    {
+        foreach (var item in cart.Items)
+        {
+            inventory.UpdateStock(item.Key, item.Value.quantity);
+        }
+
+        Status = "Completed";
+        Console.WriteLine($"Order placed. Total: ${cart.CalculateTotal()}");
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        Inventory inventory = new Inventory();
+        inventory.AddProduct(new Product(1, "T-shirt", 50.0, 10));
+        inventory.AddProduct(new Product(2, "Jeans", 120.0, 5));
+
+        ShoppingCart cart = new ShoppingCart();
+        cart.AddToCart(inventory.GetProduct(1), 2);
+        cart.AddToCart(inventory.GetProduct(2), 1);
+
+        Order order = new Order(cart, inventory);
+        order.PlaceOrder();
+    }
+}
