@@ -50,8 +50,6 @@ class Order:
         self.status = "Completed"
         print(f"Order placed. Total: ${self.cart.calculate_total()}")
 
-
-# Przykład użycia
 inventory = Inventory()
 inventory.add_product(Product(1, "T-shirt", 50.0, 10))
 inventory.add_product(Product(2, "Jeans", 120.0, 5))
