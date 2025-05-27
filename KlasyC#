@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 class Product
 {
@@ -18,13 +19,13 @@ class Product
 
     public override string ToString()
     {
-        return $"{Id}. {Name} - ${Price} ({Stock} szt.)";
+        return Id + ". " + Name + " - $" + Price + " (" + Stock + " szt.)";
     }
 }
 
 class Inventory
 {
-    public Dictionary<int, Product> Products = new();
+    public Dictionary<int, Product> Products = new Dictionary<int, Product>();
 
     public void AddProduct(Product product)
     {
@@ -33,7 +34,10 @@ class Inventory
 
     public Product GetProduct(int id)
     {
-        return Products.ContainsKey(id) ? Products[id] : null;
+        if (Products.ContainsKey(id))
+            return Products[id];
+        else
+            return null;
     }
 
     public void ListProducts()
@@ -49,24 +53,36 @@ class Inventory
     }
 }
 
+class ShoppingCartItem
+{
+    public Product Product;
+    public int Quantity;
+
+    public ShoppingCartItem(Product product, int quantity)
+    {
+        Product = product;
+        Quantity = quantity;
+    }
+}
+
 class ShoppingCart
 {
-    public Dictionary<int, (Product product, int quantity)> Items = new();
+    public Dictionary<int, ShoppingCartItem> Items = new Dictionary<int, ShoppingCartItem>();
 
     public void AddToCart(Product product, int quantity)
     {
         if (product.Stock >= quantity)
         {
             if (Items.ContainsKey(product.Id))
-                Items[product.Id] = (product, Items[product.Id].quantity + quantity);
+                Items[product.Id].Quantity += quantity;
             else
-                Items[product.Id] = (product, quantity);
+                Items[product.Id] = new ShoppingCartItem(product, quantity);
 
-            Console.WriteLine($"Dodano {quantity} x {product.Name} do koszyka.");
+            Console.WriteLine("Dodano " + quantity + " x " + product.Name + " do koszyka.");
         }
         else
         {
-            Console.WriteLine($"Za mało na stanie: {product.Name}");
+            Console.WriteLine("Za mało na stanie: " + product.Name);
         }
     }
 
@@ -82,10 +98,10 @@ class ShoppingCart
             double total = 0;
             foreach (var item in Items.Values)
             {
-                Console.WriteLine($"{item.product.Name} - {item.quantity} szt. - ${item.product.Price * item.quantity}");
-                total += item.product.Price * item.quantity;
+                Console.WriteLine(item.Product.Name + " - " + item.Quantity + " szt. - $" + (item.Product.Price * item.Quantity));
+                total += item.Product.Price * item.Quantity;
             }
-            Console.WriteLine($"Razem: ${total}\n");
+            Console.WriteLine("Razem: $" + total + "\n");
         }
     }
 
@@ -93,11 +109,14 @@ class ShoppingCart
     {
         double total = 0;
         foreach (var item in Items.Values)
-            total += item.product.Price * item.quantity;
+            total += item.Product.Price * item.Quantity;
         return total;
     }
 
-    public void ClearCart() => Items.Clear();
+    public void ClearCart()
+    {
+        Items.Clear();
+    }
 }
 
 class Order
@@ -106,9 +125,9 @@ class Order
     {
         foreach (var item in cart.Items)
         {
-            inventory.UpdateStock(item.Key, item.Value.quantity);
+            inventory.UpdateStock(item.Key, item.Value.Quantity);
         }
-        Console.WriteLine($"Zamówienie złożone! Kwota do zapłaty: ${cart.CalculateTotal()}\n");
+        Console.WriteLine("Zamówienie złożone! Kwota do zapłaty: $" + cart.CalculateTotal() + "\n");
         cart.ClearCart();
     }
 }
@@ -117,15 +136,15 @@ class Program
 {
     static void Main()
     {
-        Console.OutputEncoding = System.Text.Encoding.UTF8;
-        Console.InputEncoding = System.Text.Encoding.UTF8;
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
 
-        Inventory inventory = new();
+        Inventory inventory = new Inventory();
         inventory.AddProduct(new Product(1, "Koszulka", 50.0, 10));
         inventory.AddProduct(new Product(2, "Jeansy", 120.0, 5));
         inventory.AddProduct(new Product(3, "Bluza", 90.0, 7));
 
-        ShoppingCart cart = new();
+        ShoppingCart cart = new ShoppingCart();
 
         while (true)
         {
